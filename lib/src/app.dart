@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'data/state.dart';
+import 'features/dashboard/dashboard_screen.dart';
 import 'features/transactions/transactions_screen.dart';
 import 'features/wallets/wallets_screen.dart';
 import 'ui/shared.dart';
@@ -16,7 +17,7 @@ const _destinations = [
 final _routerProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
     routes: [
-      _route('/', (_) => const Center(child: Text('Overview'))),
+      _route('/', (_) => const DashboardScreen()),
       _route('/wallets', (_) => const WalletsScreen()),
       _route(
         '/transactions',
