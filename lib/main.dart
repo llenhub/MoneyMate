@@ -1,17 +1,9 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-void main() => runApp(const MoneyMateApp());
+import 'src/app.dart';
 
-class MoneyMateApp extends StatelessWidget {
-  const MoneyMateApp({super.key});
-
-  @override
-  Widget build(BuildContext context) => MaterialApp(
-    title: 'MoneyMate',
-    theme: ThemeData(colorSchemeSeed: const Color(0xff26805d)),
-    home: Scaffold(
-      appBar: AppBar(title: const Text('MoneyMate')),
-      body: const Center(child: Text('MoneyMate')),
-    ),
-  );
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const ProviderScope(child: MoneyMateApp()));
 }
