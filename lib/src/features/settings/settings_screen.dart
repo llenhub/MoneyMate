@@ -198,7 +198,32 @@ class SettingsScreen extends ConsumerWidget {
                   const Text('MoneyMate 1.0.0'),
                   const SizedBox(height: 8),
                   const Text(
-                    'Your wallets, transactions, and budgets stay in local app or browser storage.',
+                    'Your wallets, transactions, budgets, and chat stay in local app or browser storage.',
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton.icon(
+                    onPressed: state.ledger.messages.isEmpty
+                        ? null
+                        : () async {
+                            if (!await confirm(
+                                  context,
+                                  'Clear chat history?',
+                                  'This deletes the conversation in the active ledger.',
+                                  'Clear',
+                                ) ||
+                                !context.mounted) {
+                              return;
+                            }
+                            await runAction(
+                              context,
+                              () => controller.change(
+                                (data) => data.copy(messages: []),
+                                expectedDemo: prefs.demo,
+                              ),
+                            );
+                          },
+                    icon: const Icon(Icons.delete_sweep_outlined),
+                    label: const Text('Clear chat history'),
                   ),
                 ],
               ),

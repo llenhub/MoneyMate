@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'data/state.dart';
+import 'features/assistant/assistant_screen.dart';
 import 'features/budgets/budgets_screen.dart';
 import 'features/dashboard/dashboard_screen.dart';
 import 'features/settings/settings_screen.dart';
@@ -14,6 +15,7 @@ const _destinations = [
   ('/', 'Home', Icons.space_dashboard_outlined),
   ('/wallets', 'Wallets', Icons.account_balance_wallet_outlined),
   ('/transactions', 'Transactions', Icons.receipt_long_outlined),
+  ('/assistant', 'AI Assistant', Icons.auto_awesome_outlined),
   ('/settings', 'Settings', Icons.settings_outlined),
 ];
 
@@ -29,6 +31,7 @@ final _routerProvider = Provider<GoRouter>((ref) {
           walletId: state.uri.queryParameters['wallet'],
         ),
       ),
+      _route('/assistant', (_) => const AssistantScreen()),
       _route('/settings', (_) => const SettingsScreen()),
       _route('/budgets', (_) => const BudgetsScreen()),
     ],

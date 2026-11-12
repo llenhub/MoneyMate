@@ -319,6 +319,44 @@ void main() {
     );
   });
 
+  test(
+    'assistant context calculates monthly change, category shares and remaining budgets',
+    () {
+      final data = ledger.copy(
+        entries: [
+          entry(
+            'prior',
+            EntryType.expense,
+            3500,
+            bank.id,
+            when: DateTime(2026, 10, 14),
+            category: 'expense-3',
+          ),
+          entry(
+            'current',
+            EntryType.expense,
+            5000,
+            card.id,
+            category: 'expense-3',
+          ),
+          entry('pay', EntryType.transfer, 5000, bank.id, to: card.id),
+        ],
+        budgets: [Budget('monthly', 'USD', '2026-11', 7500, date)],
+      );
+      final context = Analytics(data).assistantContext(date, 'USD');
+      expect(context['expenseMinor'], 5000);
+      expect(context['expenseChangeMinor'], 1500);
+      expect((context['categories'] as List).single['sharePercent'], 100);
+      expect(
+        (context['categories'] as List)
+            .single['exampleSavingsMinorAtTenPercent'],
+        500,
+      );
+      expect((context['budgets'] as List).single['remainingMinor'], 2500);
+      expect((context['largestExpenses'] as List).single['amountMinor'], 5000);
+    },
+  );
+
   test('money parsing is exact and respects supported minor units', () {
     expect(parseMoney('100.03', 'USD'), 10003);
     expect(parseMoney('1.2', 'USD'), 120);
