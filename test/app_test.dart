@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moneymate/src/app.dart';
+import 'package:moneymate/src/core/models.dart';
 import 'package:moneymate/src/data/state.dart';
 import 'package:moneymate/src/features/assistant/ai_service.dart';
 import 'package:moneymate/src/features/assistant/model_panel.dart';
@@ -46,16 +47,11 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.byType(NavigationBar), findsOneWidget);
-    expect(find.text('Overview'), findsOneWidget);
-    await tester.tap(
-      find.byWidgetPredicate(
-        (widget) =>
-            widget is NavigationDestination && widget.label == 'Wallets',
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(find.text('No wallets yet'), findsOneWidget);
-    await tester.tap(find.text('New wallet'));
+    expect(find.text('List of Accounts'), findsOneWidget);
+    expect(find.text('Statistics'), findsOneWidget);
+    expect(find.text('Records'), findsOneWidget);
+    expect(find.text('Planning'), findsOneWidget);
+    await tester.tap(find.text('Add Account'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, 'Pocket cash');
     final save = find.text('Save wallet');
@@ -63,6 +59,93 @@ void main() {
     await tester.tap(save);
     await tester.pumpAndSettle();
     expect(find.text('Pocket cash'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FloatingActionButton, 'Record'));
+    await tester.pumpAndSettle();
+    for (final key in ['1', '+', '2', '=']) {
+      await tester.tap(find.text(key));
+      await tester.pumpAndSettle();
+    }
+    expect(find.text('3.00'), findsOneWidget);
+    await tester.tap(find.text('Select category'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Food & Drinks'));
+    await tester.pumpAndSettle();
+    expect(find.text('3.00'), findsOneWidget);
+    final need = find.widgetWithText(ChoiceChip, 'Need');
+    await tester.ensureVisible(need);
+    await tester.tap(need);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Save'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(NavigationDestination, 'Records'));
+    await tester.pumpAndSettle();
+    expect(find.text('Food & Drinks'), findsOneWidget);
+    await tester.tap(find.text('Food & Drinks'));
+    await tester.pumpAndSettle();
+    expect(find.text('Need'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Planning persists a label, budget alert and two-step goal', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(360, 800);
+    addTearDown(tester.view.reset);
+    final store = MemoryStore();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [storeProvider.overrideWith((ref) async => store)],
+        child: const MoneyMateApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(NavigationDestination, 'Planning'));
+    await tester.pumpAndSettle();
+
+    Future<void> tapText(String value) async {
+      final target = find.text(value);
+      await Scrollable.ensureVisible(tester.element(target), alignment: 0.45);
+      await tester.pumpAndSettle();
+      await tester.tap(target);
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> enter(String label, String text) async {
+      final field = find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField && widget.decoration?.labelText == label,
+      );
+      await tester.ensureVisible(field);
+      await tester.enterText(field, text);
+      await tester.pumpAndSettle();
+    }
+
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -420));
+    await tester.pumpAndSettle();
+    await tapText('Create Label');
+    await enter('Label name', 'Travel');
+    await tapText('Save label');
+
+    await tapText('Create Budget');
+    await enter('Budget limit', '120');
+    await tapText('Risk of Overspending');
+    await tester.tap(find.byTooltip('Save'));
+    await tester.pumpAndSettle();
+
+    await tapText('Create Goal');
+    await tapText('Holiday Trip');
+    await enter('Target amount', '400');
+    await enter('Saved already', '125');
+    await tester.tap(find.byTooltip('Save'));
+    await tester.pumpAndSettle();
+
+    final ledger = Ledger.decode(store.values['ledger']!);
+    expect(ledger.labels.single.name, 'Travel');
+    expect(ledger.budgets.single.amount, 12000);
+    expect(ledger.budgets.single.notifyRisk, isTrue);
+    expect(ledger.goals.single.name, 'Holiday Trip');
+    expect(ledger.goals.single.saved, 12500);
     expect(tester.takeException(), isNull);
   });
 
@@ -91,7 +174,18 @@ void main() {
     expect(find.text('Demo mode · Fictional data'), findsOneWidget);
     await tester.tap(find.text('Home'));
     await tester.pumpAndSettle();
-    expect(find.text('Spending by category'), findsOneWidget);
+    expect(find.text('Expenses Structure'), findsOneWidget);
+    await tester.tap(find.text('Statistics'));
+    await tester.pumpAndSettle();
+    expect(find.text('Spending by Categories or Labels'), findsOneWidget);
+    await tester.tap(find.text('Balance'));
+    await tester.pumpAndSettle();
+    expect(find.text('Balance by Accounts'), findsOneWidget);
+    await tester.tap(find.text('Planning'));
+    await tester.pumpAndSettle();
+    expect(find.text('Create Budget'), findsOneWidget);
+    expect(find.text('Create Goal'), findsOneWidget);
+    expect(find.text('Create Label'), findsOneWidget);
     await tester.tap(find.text('AI Assistant'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Where am I spending the most?'));

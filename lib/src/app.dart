@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'data/state.dart';
 import 'features/assistant/assistant_screen.dart';
 import 'features/planning/planning_screen.dart';
+import 'features/statistics/statistics_screen.dart';
 import 'features/dashboard/dashboard_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/transactions/transactions_screen.dart';
@@ -13,10 +14,9 @@ import 'ui/shared.dart';
 
 const _destinations = [
   ('/', 'Home', Icons.space_dashboard_outlined),
-  ('/wallets', 'Wallets', Icons.account_balance_wallet_outlined),
-  ('/transactions', 'Transactions', Icons.receipt_long_outlined),
-  ('/assistant', 'AI Assistant', Icons.auto_awesome_outlined),
-  ('/settings', 'Settings', Icons.settings_outlined),
+  ('/statistics', 'Statistics', Icons.bar_chart_rounded),
+  ('/records', 'Records', Icons.receipt_long_outlined),
+  ('/planning', 'Planning', Icons.flag_outlined),
 ];
 
 final _routerProvider = Provider<GoRouter>((ref) {
@@ -25,7 +25,7 @@ final _routerProvider = Provider<GoRouter>((ref) {
       _route('/', (_) => const DashboardScreen()),
       _route('/wallets', (_) => const WalletsScreen()),
       _route(
-        '/transactions',
+        '/records',
         (state) => TransactionsScreen(
           key: ValueKey(state.uri.toString()),
           walletId: state.uri.queryParameters['wallet'],
@@ -33,7 +33,19 @@ final _routerProvider = Provider<GoRouter>((ref) {
       ),
       _route('/assistant', (_) => const AssistantScreen()),
       _route('/settings', (_) => const SettingsScreen()),
-      _route('/budgets', (_) => const PlanningScreen()),
+      _route('/planning', (_) => const PlanningScreen()),
+      _route(
+        '/statistics',
+        (state) => StatisticsScreen(
+          key: ValueKey(state.uri),
+          balance: state.uri.queryParameters['view'] == 'balance',
+        ),
+      ),
+      GoRoute(path: '/budgets', redirect: (_, _) => '/planning'),
+      GoRoute(
+        path: '/transactions',
+        redirect: (_, state) => state.uri.replace(path: '/records').toString(),
+      ),
     ],
   );
   ref.onDispose(router.dispose);
@@ -151,33 +163,24 @@ class _Shell extends ConsumerWidget {
       ),
     );
     void navigate(int index) => context.go(_destinations[index].$1);
-    final hasWallet =
-        state?.ledger.wallets.any((wallet) => !wallet.archived) ?? false;
-    final showAdd =
-        state != null &&
-        (path == '/' ||
-            path == '/transactions' ||
-            (path == '/wallets' && hasWallet));
+    final primary = index >= 0;
+    final showAdd = state != null && primary;
     return Scaffold(
-      appBar: desktop
-          ? null
-          : AppBar(
-              title: const Text('MoneyMate'),
-              actions: [
-                IconButton(
-                  tooltip: 'Monthly budgets',
-                  icon: const Icon(Icons.pie_chart_outline),
-                  onPressed: () => context.go('/budgets'),
-                ),
-              ],
-            ),
+      appBar: !primary && path != '/assistant'
+          ? AppBar(
+              leading: IconButton(
+                tooltip: 'Back to Home',
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => context.go('/'),
+              ),
+            )
+          : null,
       bottomNavigationBar: desktop
           ? null
           : NavigationBar(
               selectedIndex: selected,
               onDestinationSelected: navigate,
-              labelBehavior:
-                  NavigationDestinationLabelBehavior.onlyShowSelected,
+              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
               destinations: [
                 for (final item in _destinations)
                   NavigationDestination(icon: Icon(item.$3), label: item.$2),
@@ -185,15 +188,9 @@ class _Shell extends ConsumerWidget {
             ),
       floatingActionButton: showAdd
           ? FloatingActionButton.extended(
-              onPressed: () {
-                if (hasWallet) {
-                  openEntryEditor(context, ref, state);
-                } else {
-                  context.go('/wallets');
-                }
-              },
+              onPressed: () => openEntryEditor(context, ref, state),
               icon: const Icon(Icons.add),
-              label: Text(hasWallet ? 'Transaction' : 'Add wallet'),
+              label: const Text('Record'),
             )
           : null,
       body: desktop
@@ -203,7 +200,7 @@ class _Shell extends ConsumerWidget {
                   backgroundColor: Theme.of(context).colorScheme.surface,
                   extended: true,
                   minExtendedWidth: 206,
-                  selectedIndex: selected,
+                  selectedIndex: primary ? selected : null,
                   onDestinationSelected: navigate,
                   leading: const Padding(
                     padding: EdgeInsets.fromLTRB(14, 22, 14, 24),
@@ -235,10 +232,19 @@ class _Shell extends ConsumerWidget {
                   ],
                   trailing: Padding(
                     padding: const EdgeInsets.only(top: 14),
-                    child: TextButton.icon(
-                      onPressed: () => context.go('/budgets'),
-                      icon: const Icon(Icons.pie_chart_outline),
-                      label: const Text('Monthly budgets'),
+                    child: Column(
+                      children: [
+                        TextButton.icon(
+                          onPressed: () => context.go('/assistant'),
+                          icon: const Icon(Icons.auto_awesome_outlined),
+                          label: const Text('AI Assistant'),
+                        ),
+                        TextButton.icon(
+                          onPressed: () => context.go('/settings'),
+                          icon: const Icon(Icons.settings_outlined),
+                          label: const Text('Settings'),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -246,7 +252,7 @@ class _Shell extends ConsumerWidget {
                 Expanded(child: content),
               ],
             )
-          : content,
+          : SafeArea(bottom: false, child: content),
     );
   }
 }

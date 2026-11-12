@@ -171,7 +171,7 @@ class WalletsScreen extends ConsumerWidget {
                     TextButton.icon(
                       onPressed: () => context.go(
                         Uri(
-                          path: '/transactions',
+                          path: '/records',
                           queryParameters: {'wallet': wallet.id},
                         ).toString(),
                       ),

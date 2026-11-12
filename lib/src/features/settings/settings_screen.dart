@@ -183,9 +183,9 @@ class SettingsScreen extends ConsumerWidget {
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: const Icon(Icons.pie_chart_outline),
-                    title: const Text('Monthly budgets'),
+                    title: const Text('Planning'),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: () => context.go('/budgets'),
+                    onTap: () => context.go('/planning'),
                   ),
                 ],
               ),
