@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/analytics.dart';
 import '../../core/models.dart';
@@ -157,6 +158,16 @@ class WalletsScreen extends ConsumerWidget {
                         '${wallet.limit == null ? '' : ' · Limit ${money(wallet.limit!, wallet.currency)}'}',
                       ),
                     const SizedBox(height: 8),
+                    TextButton.icon(
+                      onPressed: () => context.go(
+                        Uri(
+                          path: '/transactions',
+                          queryParameters: {'wallet': wallet.id},
+                        ).toString(),
+                      ),
+                      icon: const Icon(Icons.history),
+                      label: const Text('View history'),
+                    ),
                   ],
                 ),
               ),

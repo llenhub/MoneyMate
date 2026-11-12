@@ -3,12 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'data/state.dart';
+import 'features/transactions/transactions_screen.dart';
 import 'features/wallets/wallets_screen.dart';
 import 'ui/shared.dart';
 
 const _destinations = [
   ('/', 'Home', Icons.space_dashboard_outlined),
   ('/wallets', 'Wallets', Icons.account_balance_wallet_outlined),
+  ('/transactions', 'Transactions', Icons.receipt_long_outlined),
 ];
 
 final _routerProvider = Provider<GoRouter>((ref) {
@@ -16,6 +18,13 @@ final _routerProvider = Provider<GoRouter>((ref) {
     routes: [
       _route('/', (_) => const Center(child: Text('Overview'))),
       _route('/wallets', (_) => const WalletsScreen()),
+      _route(
+        '/transactions',
+        (state) => TransactionsScreen(
+          key: ValueKey(state.uri.toString()),
+          walletId: state.uri.queryParameters['wallet'],
+        ),
+      ),
     ],
   );
   ref.onDispose(router.dispose);
@@ -98,12 +107,30 @@ class _Shell extends ConsumerWidget {
     final desktop = MediaQuery.sizeOf(context).width >= 860;
     final index = _destinations.indexWhere((item) => item.$1 == path);
     final selected = index < 0 ? 0 : index;
+    final state = finance.value;
     final content = finance.when(
       data: (_) => child,
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, _) => const Center(child: Text('Could not open local data')),
+      error: (_, _) => Center(
+        child: EmptyPanel(
+          Icons.storage,
+          'Could not open local data',
+          'Check that this device or browser allows local storage.',
+          action: FilledButton(
+            onPressed: () => ref.invalidate(financeProvider),
+            child: const Text('Retry'),
+          ),
+        ),
+      ),
     );
     void navigate(int index) => context.go(_destinations[index].$1);
+    final hasWallet =
+        state?.ledger.wallets.any((wallet) => !wallet.archived) ?? false;
+    final showAdd =
+        state != null &&
+        (path == '/' ||
+            path == '/transactions' ||
+            (path == '/wallets' && hasWallet));
     return Scaffold(
       appBar: desktop ? null : AppBar(title: const Text('MoneyMate')),
       bottomNavigationBar: desktop
@@ -118,6 +145,19 @@ class _Shell extends ConsumerWidget {
                   NavigationDestination(icon: Icon(item.$3), label: item.$2),
               ],
             ),
+      floatingActionButton: showAdd
+          ? FloatingActionButton.extended(
+              onPressed: () {
+                if (hasWallet) {
+                  openEntryEditor(context, ref, state);
+                } else {
+                  context.go('/wallets');
+                }
+              },
+              icon: const Icon(Icons.add),
+              label: Text(hasWallet ? 'Transaction' : 'Add wallet'),
+            )
+          : null,
       body: desktop
           ? Row(
               children: [
