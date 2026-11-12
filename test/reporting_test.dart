@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moneymate/src/core/analytics.dart';
+import 'package:moneymate/src/core/calculator.dart';
 import 'package:moneymate/src/core/models.dart';
 import 'package:moneymate/src/core/reporting.dart';
 
@@ -67,6 +68,22 @@ Entry _record(
 );
 
 void main() {
+  test(
+    'calculator uses precedence and rounds once in the selected currency',
+    () {
+      expect(evaluateAmount('100+50', 'USD'), 15000);
+      expect(evaluateAmount('0.1+0.2', 'USD'), 30);
+      expect(evaluateAmount('2+3×4−1', 'USD'), 1300);
+      expect(evaluateAmount('10÷3×3', 'USD'), 1000);
+      expect(evaluateAmount('1÷8', 'USD'), 13);
+      expect(evaluateAmount('2.5', 'JPY'), 3);
+      expect(evaluateAmount('-4+6', 'USD'), 200);
+      for (final invalid in ['1÷0', '1+', '1.2.3', '4++5', '', '1 2']) {
+        expect(() => evaluateAmount(invalid, 'USD'), throwsFormatException);
+      }
+    },
+  );
+
   test(
     'report windows use local calendar days and cover every date exactly once',
     () {

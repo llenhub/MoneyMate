@@ -9,6 +9,9 @@ import '../assistant/model_panel.dart';
 import 'backup.dart';
 import 'demo.dart';
 
+Future<void> openCategories(BuildContext context) =>
+    editDialog<void>(context, 'Manage categories', const _Categories());
+
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -175,11 +178,7 @@ class SettingsScreen extends ConsumerWidget {
                     leading: const Icon(Icons.sell_outlined),
                     title: const Text('Manage categories'),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: () => editDialog<void>(
-                      context,
-                      'Manage categories',
-                      const _Categories(),
-                    ),
+                    onTap: () => openCategories(context),
                   ),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
