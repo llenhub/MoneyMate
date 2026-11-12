@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/models.dart';
 import '../../data/state.dart';
 import '../../ui/shared.dart';
+import 'demo.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -60,6 +61,52 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
               ]),
+            ),
+            Panel(
+              title: 'Demo data',
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Demo mode'),
+                    subtitle: const Text(
+                      'Explore a separate fictional ledger.',
+                    ),
+                    value: prefs.demo,
+                    onChanged: (enabled) => runAction(
+                      context,
+                      () => controller.settings(
+                        prefs.copy(demo: enabled),
+                        demoSeed: () => demoLedger(DateTime.now()),
+                      ),
+                    ),
+                  ),
+                  if (prefs.demo)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.restart_alt),
+                      title: const Text('Reset demo data'),
+                      onTap: () async {
+                        if (!await confirm(
+                              context,
+                              'Reset the demo?',
+                              'This replaces the demo ledger with fresh sample data.',
+                              'Reset',
+                            ) ||
+                            !context.mounted) {
+                          return;
+                        }
+                        await runAction(
+                          context,
+                          () => controller.change(
+                            (_) => demoLedger(DateTime.now()),
+                            expectedDemo: true,
+                          ),
+                        );
+                      },
+                    ),
+                ],
+              ),
             ),
           ],
         ),

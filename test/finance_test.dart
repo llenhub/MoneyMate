@@ -3,6 +3,7 @@ import 'package:moneymate/src/core/analytics.dart';
 import 'package:moneymate/src/core/models.dart';
 import 'package:moneymate/src/data/repository.dart';
 import 'package:moneymate/src/data/storage.dart';
+import 'package:moneymate/src/features/settings/demo.dart';
 
 import 'support/memory_store.dart';
 
@@ -250,6 +251,27 @@ void main() {
           .validate(),
       throwsFormatException,
     );
+  });
+
+  test('demo snapshots stay separate from personal snapshots', () async {
+    final empty = await repository.load(demo: true);
+    final seeded = demoLedger(date);
+    expect(
+      () => Ledger.decode(seeded.encode(demo: true), expectedDemo: false),
+      throwsFormatException,
+    );
+    expect(
+      Ledger.decode(seeded.encode(demo: true), expectedDemo: true).entries,
+      hasLength(seeded.entries.length),
+    );
+    await repository.save(seeded, demo: true, previous: empty);
+    expect((await repository.load(demo: true)).entries, isNotEmpty);
+    expect((await repository.load(demo: false)).wallets.map((w) => w.id), [
+      bank.id,
+      cash.id,
+      card.id,
+      jpy.id,
+    ]);
   });
 
   test('stale writes cannot overwrite a newer snapshot', () async {

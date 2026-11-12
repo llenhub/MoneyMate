@@ -115,7 +115,25 @@ class _Shell extends ConsumerWidget {
     final selected = index < 0 ? 0 : index;
     final state = finance.value;
     final content = finance.when(
-      data: (_) => child,
+      data: (_) => Column(
+        children: [
+          if (state!.preferences.demo)
+            Material(
+              color: Theme.of(context).colorScheme.tertiaryContainer,
+              child: const SizedBox(
+                width: double.infinity,
+                child: Padding(
+                  padding: EdgeInsets.all(7),
+                  child: Text(
+                    'Demo mode · Fictional data',
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+            ),
+          Expanded(child: child),
+        ],
+      ),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (_, _) => Center(
         child: EmptyPanel(
