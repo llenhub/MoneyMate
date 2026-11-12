@@ -93,10 +93,16 @@ extension Reporting on Analytics {
             .toList()
           ..sort((a, b) => a.date.compareTo(b.date));
     final earliest = changes.firstOrNull?.date;
-    final opened = earliest != null && earliest.isBefore(wallet.created)
+    var opened = earliest != null && earliest.isBefore(wallet.created)
         ? earliest
         : wallet.created;
     var balance = wallet.opening;
+    for (final entry in changes) {
+      if (!entry.includedInBalance) continue;
+      balance += entry.openingBalanceAdjustment;
+      final previousDay = shiftDay(localDay(entry.date), -1);
+      if (previousDay.isBefore(opened)) opened = previousDay;
+    }
     var index = 0;
     return [
       for (final bucket in buckets)
@@ -105,11 +111,9 @@ extension Reporting on Analytics {
             while (index < changes.length &&
                 changes[index].date.isBefore(bucket.end)) {
               final entry = changes[index++];
-              balance +=
-                  entry.destinationId == wallet.id ||
-                      entry.type == EntryType.income
+              balance += entry.destinationId == wallet.id
                   ? entry.amount
-                  : -entry.amount;
+                  : entry.sourceBalanceDelta;
             }
             return (date: shiftDay(bucket.end, -1), value: balance);
           })(),

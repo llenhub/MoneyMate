@@ -49,6 +49,7 @@ Entry _record(
   SpendingNature? nature,
   EntryType type = EntryType.expense,
   String? to,
+  bool includedInBalance = false,
 }) => Entry(
   id,
   type,
@@ -65,6 +66,7 @@ Entry _record(
   labelIds: labels,
   nature: nature,
   destinationId: to,
+  includedInBalance: includedInBalance,
 );
 
 void main() {
@@ -83,6 +85,99 @@ void main() {
       }
     },
   );
+
+  test('included expenses reconstruct history and keep balances stable', () {
+    final today = DateTime(2026, 11, 12);
+    final yesterday = DateTime(2026, 11, 11);
+    final cash = Wallet(
+      'joined',
+      'Cash',
+      WalletType.cash,
+      'USD',
+      1100,
+      palette.first,
+      'cash',
+      today,
+    );
+    final purchase = _record(
+      'forgotten',
+      500,
+      cash,
+      yesterday,
+      includedInBalance: true,
+    );
+    final ledger = Ledger(wallets: [cash], entries: [purchase]);
+    final restored = Ledger.decode(ledger.encode());
+    final analytics = Analytics(restored);
+    final buckets = ReportRange.week.buckets(today);
+    final history = analytics.balanceHistory(cash, buckets);
+    expect(history.first.date, DateTime(2026, 11, 10));
+    expect(history.map((point) => point.value), [1600, 1100, 1100]);
+    expect(analytics.balances()[cash.id], 1100);
+    expect(analytics.totals(Period.month(today), 'USD').expense, 500);
+    expect(analytics.totals(Period.month(today), 'USD').categories, {
+      'expense-0': 500,
+    });
+
+    final edited = Analytics(
+      restored.copy(
+        entries: [
+          _record(purchase.id, 800, cash, yesterday, includedInBalance: true),
+        ],
+      ),
+    );
+    expect(edited.balanceHistory(cash, buckets).first.value, 1900);
+    expect(edited.balances()[cash.id], 1100);
+    final deleted = Analytics(restored.copy(entries: []));
+    expect(deleted.balanceHistory(cash, buckets).single.value, 1100);
+    expect(deleted.balances()[cash.id], 1100);
+  });
+
+  test('included income and expenses are each counted once in reports', () {
+    final ledger = Ledger(
+      wallets: [_cash],
+      entries: [
+        _record('old-purchase', 500, _cash, _date, includedInBalance: true),
+        _record(
+          'old-income',
+          900,
+          _cash,
+          _date,
+          type: EntryType.income,
+          includedInBalance: true,
+        ),
+        _record('new-purchase', 100, _cash, _date),
+      ],
+    );
+    ledger.validate();
+    final analytics = Analytics(ledger);
+    expect(analytics.balances()[_cash.id], 900);
+    final totals = analytics.totals(Period.month(_date), 'USD');
+    expect(totals.income, 900);
+    expect(totals.expense, 600);
+    expect(
+      analytics
+          .balanceHistory(_cash, ReportRange.week.buckets(_date))
+          .last
+          .value,
+      900,
+    );
+    final badTransfer = ledger.copy(
+      wallets: [_cash, _bank],
+      entries: [
+        _record(
+          'transfer',
+          100,
+          _cash,
+          _date,
+          type: EntryType.transfer,
+          to: _bank.id,
+          includedInBalance: true,
+        ),
+      ],
+    );
+    expect(badTransfer.validate, throwsFormatException);
+  });
 
   test(
     'report windows use local calendar days and cover every date exactly once',
@@ -226,6 +321,7 @@ void main() {
       expect(migrated.entries.single.amount, 250);
       expect(migrated.entries.single.labelIds, isEmpty);
       expect(migrated.entries.single.nature, isNull);
+      expect(migrated.entries.single.includedInBalance, isFalse);
       final next = migrated.copy(
         labels: [_trip],
         goals: [

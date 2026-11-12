@@ -120,6 +120,8 @@ Future<void> showEntryDetails(
           Text(ledger.category(entry.categoryId)!.name),
         if (entry.description.isNotEmpty) Text(entry.description),
         if (entry.notes.isNotEmpty) Text(entry.notes),
+        if (entry.includedInBalance)
+          const Text('Already included in my balance'),
         if (entry.nature != null) Text(titleCase(entry.nature!.name)),
         if (entry.labelIds.isNotEmpty)
           Wrap(
@@ -153,7 +155,9 @@ Future<void> showEntryDetails(
                 if (!await confirm(
                   dialogContext,
                   'Delete transaction?',
-                  'Balances and reports will be recalculated.',
+                  entry.includedInBalance
+                      ? 'Reports will be recalculated. Your current balance will stay the same.'
+                      : 'Balances and reports will be recalculated.',
                   'Delete',
                 )) {
                   return;

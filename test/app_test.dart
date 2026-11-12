@@ -80,6 +80,14 @@ void main() {
     await tester.tap(find.text('Food & Drinks'));
     await tester.pumpAndSettle();
     expect(find.text('3.00'), findsOneWidget);
+    final included = find.widgetWithText(
+      CheckboxListTile,
+      'Already included in the balance?',
+    );
+    expect(tester.widget<CheckboxListTile>(included).value, isFalse);
+    await tester.ensureVisible(included);
+    await tester.tap(included);
+    await tester.pumpAndSettle();
     final need = find.widgetWithText(ChoiceChip, 'Need');
     await tester.ensureVisible(need);
     await tester.tap(need);
@@ -92,6 +100,7 @@ void main() {
     await tester.tap(find.text('Food & Drinks'));
     await tester.pumpAndSettle();
     expect(find.text('Need'), findsOneWidget);
+    expect(find.text('Already included in my balance'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

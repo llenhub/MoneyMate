@@ -57,7 +57,7 @@ class Analytics {
         entry.walletId,
         (balance) =>
             balance +
-            (entry.type == EntryType.income ? entry.amount : -entry.amount),
+            (entry.sourceBalanceDelta + entry.openingBalanceAdjustment),
       );
       if (entry.type == EntryType.transfer) {
         result.update(

@@ -219,12 +219,14 @@ class Entry {
     this.notes = '',
     this.labelIds = const [],
     this.nature,
+    this.includedInBalance = false,
   });
 
   final String id, walletId, description, notes;
   final String? destinationId, categoryId;
   final List<String> labelIds;
   final SpendingNature? nature;
+  final bool includedInBalance;
 
   Entry withoutLabel(String id) => Entry(
     this.id,
@@ -239,11 +241,18 @@ class Entry {
     description: description,
     notes: notes,
     nature: nature,
+    includedInBalance: includedInBalance,
     labelIds: List.unmodifiable(labelIds.where((label) => label != id)),
   );
   final EntryType type;
   final int amount;
   final DateTime date, created, updated;
+
+  int get sourceBalanceDelta => type == EntryType.income ? amount : -amount;
+
+  // Reconstruct the balance before this entry without changing today's total.
+  int get openingBalanceAdjustment =>
+      includedInBalance ? -sourceBalanceDelta : 0;
 
   Entry.fromJson(Json json)
     : this(
@@ -264,6 +273,7 @@ class Entry {
         nature: json['nature'] == null
             ? null
             : SpendingNature.values.byName(json['nature']),
+        includedInBalance: json['includedInBalance'] as bool? ?? false,
       );
 
   Json toJson() => {
@@ -277,6 +287,7 @@ class Entry {
     'notes': notes,
     'labelIds': labelIds,
     'nature': nature?.name,
+    if (includedInBalance) 'includedInBalance': true,
     'date': date.toUtc().toIso8601String(),
     'created': created.toIso8601String(),
     'updated': updated.toIso8601String(),
@@ -495,7 +506,7 @@ class Ledger {
   );
 
   String encode({bool includeChat = false, bool? demo}) => jsonEncode({
-    'schemaVersion': 2,
+    'schemaVersion': 3,
     'demo': ?demo,
     'wallets': wallets.map((item) => item.toJson()).toList(),
     'categories': categories.map((item) => item.toJson()).toList(),
@@ -514,14 +525,15 @@ class Ledger {
       );
     }
     final version = json['schemaVersion'];
-    if (![1, 2].contains(version)) {
+    if (![1, 2, 3].contains(version)) {
       throw const FormatException('Unsupported backup version.');
     }
     final categories = (json['categories'] as List).cast<Json>().map(
       Category.fromJson,
     );
     final defaultIcons = {
-      for (final category in defaultCategories()) category.id: category.icon,
+      if (version != 3)
+        for (final category in defaultCategories()) category.id: category.icon,
     };
     final result = Ledger(
       wallets: (json['wallets'] as List).cast<Json>().map(Wallet.fromJson),
@@ -644,6 +656,10 @@ class Ledger {
             entry.labelIds.every(labelIds.contains) &&
             (entry.nature == null || entry.type == EntryType.expense),
         'Invalid transaction labels or spending nature.',
+      );
+      require(
+        !entry.includedInBalance || entry.type != EntryType.transfer,
+        'Only income and expenses can already be included in a balance.',
       );
       final source = walletById[entry.walletId];
       require(

@@ -33,6 +33,7 @@ class _EntryEditorState extends ConsumerState<EntryEditor> {
   late var _destinationId = widget.original?.destinationId;
   late var _categoryId = widget.original?.categoryId;
   late var _nature = widget.original?.nature;
+  late var _includedInBalance = widget.original?.includedInBalance ?? false;
   String? _expression, _error;
   bool _busy = false, _evaluated = false;
 
@@ -75,6 +76,7 @@ class _EntryEditorState extends ConsumerState<EntryEditor> {
     final category = ledger.category(_categoryId);
     final selectedCategory = category?.type == _type ? category : null;
     final colors = Theme.of(context).colorScheme;
+    final wasIncluded = widget.original?.includedInBalance ?? false;
 
     return EditorPage(
       title: widget.original == null ? 'New Transaction' : 'Edit Transaction',
@@ -168,6 +170,24 @@ class _EntryEditorState extends ConsumerState<EntryEditor> {
             labelText: 'Description (optional)',
           ),
         ),
+        if (_type != EntryType.transfer)
+          CheckboxListTile(
+            contentPadding: EdgeInsets.zero,
+            controlAffinity: ListTileControlAffinity.leading,
+            title: const Text('Already included in the balance?'),
+            subtitle: Text(
+              wasIncluded && !_includedInBalance
+                  ? 'Saving with this unchecked will apply the amount to your balance.'
+                  : 'Add an older transaction without changing your current balance.',
+            ),
+            value: _includedInBalance,
+            onChanged: (value) => setState(() {
+              _includedInBalance = value ?? false;
+              _error = null;
+            }),
+          )
+        else if (wasIncluded)
+          const Text('Saving as a transfer will change both account balances.'),
         OutlinedButton.icon(
           icon: const Icon(Icons.sell_outlined),
           label: Text(
@@ -442,6 +462,13 @@ class _EntryEditorState extends ConsumerState<EntryEditor> {
       }
       final previous = widget.original;
       final now = DateTime.now().toUtc();
+      final includedInBalance =
+          _type != EntryType.transfer && _includedInBalance;
+      if (includedInBalance && _date.isAfter(now)) {
+        throw const FormatException(
+          'Choose a past date and time for a transaction already in your balance.',
+        );
+      }
       final id = previous?.id ?? newId();
       setState(() {
         _busy = true;
@@ -484,6 +511,7 @@ class _EntryEditorState extends ConsumerState<EntryEditor> {
             _labels.where((id) => ledger.label(id) != null),
           ),
           nature: _type == EntryType.expense ? _nature : null,
+          includedInBalance: includedInBalance,
         );
         if (previous != null && !ledger.entries.any((item) => item.id == id)) {
           throw const FormatException('This record was removed while editing.');
