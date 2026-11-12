@@ -17,6 +17,7 @@ const _destinations = [
   ('/statistics', 'Statistics', Icons.bar_chart_rounded),
   ('/records', 'Records', Icons.receipt_long_outlined),
   ('/planning', 'Planning', Icons.flag_outlined),
+  ('/assistant', 'AI Chat', Icons.chat_bubble_outline),
 ];
 
 final _routerProvider = Provider<GoRouter>((ref) {
@@ -164,9 +165,9 @@ class _Shell extends ConsumerWidget {
     );
     void navigate(int index) => context.go(_destinations[index].$1);
     final primary = index >= 0;
-    final showAdd = state != null && primary;
+    final showAdd = state != null && primary && path != '/assistant';
     return Scaffold(
-      appBar: !primary && path != '/assistant'
+      appBar: !primary
           ? AppBar(
               leading: IconButton(
                 tooltip: 'Back to Home',
@@ -187,10 +188,11 @@ class _Shell extends ConsumerWidget {
               ],
             ),
       floatingActionButton: showAdd
-          ? FloatingActionButton.extended(
+          ? FloatingActionButton(
               onPressed: () => openEntryEditor(context, ref, state),
-              icon: const Icon(Icons.add),
-              label: const Text('Record'),
+              tooltip: 'Add transaction',
+              shape: const CircleBorder(),
+              child: const Icon(Icons.add),
             )
           : null,
       body: desktop
@@ -230,23 +232,6 @@ class _Shell extends ConsumerWidget {
                         label: Text(item.$2),
                       ),
                   ],
-                  trailing: Padding(
-                    padding: const EdgeInsets.only(top: 14),
-                    child: Column(
-                      children: [
-                        TextButton.icon(
-                          onPressed: () => context.go('/assistant'),
-                          icon: const Icon(Icons.auto_awesome_outlined),
-                          label: const Text('AI Assistant'),
-                        ),
-                        TextButton.icon(
-                          onPressed: () => context.go('/settings'),
-                          icon: const Icon(Icons.settings_outlined),
-                          label: const Text('Settings'),
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
                 const VerticalDivider(width: 1),
                 Expanded(child: content),

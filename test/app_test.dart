@@ -51,6 +51,15 @@ void main() {
     expect(find.text('Statistics'), findsOneWidget);
     expect(find.text('Records'), findsOneWidget);
     expect(find.text('Planning'), findsOneWidget);
+    expect(
+      tester
+          .widget<NavigationBar>(find.byType(NavigationBar))
+          .destinations
+          .whereType<NavigationDestination>()
+          .last
+          .label,
+      'AI Chat',
+    );
     await tester.tap(find.text('Add Account'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, 'Pocket cash');
@@ -59,7 +68,7 @@ void main() {
     await tester.tap(save);
     await tester.pumpAndSettle();
     expect(find.text('Pocket cash'), findsOneWidget);
-    await tester.tap(find.widgetWithText(FloatingActionButton, 'Record'));
+    await tester.tap(find.byTooltip('Add transaction'));
     await tester.pumpAndSettle();
     for (final key in ['1', '+', '2', '=']) {
       await tester.tap(find.text(key));
@@ -167,7 +176,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.byType(NavigationRail), findsOneWidget);
-    await tester.tap(find.text('Settings'));
+    await tester.tap(find.byTooltip('Settings'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Demo mode'));
     await tester.pumpAndSettle();
@@ -186,7 +195,7 @@ void main() {
     expect(find.text('Create Budget'), findsOneWidget);
     expect(find.text('Create Goal'), findsOneWidget);
     expect(find.text('Create Label'), findsOneWidget);
-    await tester.tap(find.text('AI Assistant'));
+    await tester.tap(find.text('AI Chat'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Where am I spending the most?'));
     await tester.pumpAndSettle();

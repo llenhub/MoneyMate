@@ -67,23 +67,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     ),
                     Positioned(
                       right: 0,
-                      child: PopupMenuButton<String>(
-                        tooltip: 'MoneyMate options',
-                        onSelected: (route) => context.go(route),
-                        itemBuilder: (_) => const [
-                          PopupMenuItem(
-                            value: '/wallets',
-                            child: Text('Manage accounts'),
-                          ),
-                          PopupMenuItem(
-                            value: '/assistant',
-                            child: Text('AI Assistant'),
-                          ),
-                          PopupMenuItem(
-                            value: '/settings',
-                            child: Text('Settings'),
-                          ),
-                        ],
+                      child: IconButton(
+                        tooltip: 'Settings',
+                        onPressed: () => context.go('/settings'),
+                        icon: const Icon(Icons.settings_outlined),
                       ),
                     ),
                   ],
