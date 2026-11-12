@@ -11,6 +11,47 @@ const starterQuestions = [
   'How much did I spend on transportation?',
 ];
 
+List<String> spendingSuggestions(
+  Json summary,
+  String currency,
+  String question,
+) {
+  final categories = (summary['categories'] as List).cast<Json>();
+  final budgets = (summary['budgets'] as List).cast<Json>();
+  final query = question.toLowerCase();
+  final mentioned = categories
+      .where((item) => query.contains((item['name'] as String).toLowerCase()))
+      .firstOrNull;
+  final candidates = mentioned == null ? categories : [mentioned];
+  return [
+    for (final category
+        in candidates
+            .where(
+              (item) =>
+                  item['classification'] == 'discretionary' &&
+                  (item['exampleSavingsMinorAtTenPercent'] as int) > 0,
+            )
+            .take(3))
+      'Review ${category['name']} for purchases you could skip next month. '
+          'A 10% reduction at this month’s recorded spending level would free up '
+          '${money(category['exampleSavingsMinorAtTenPercent'] as int, currency)}.',
+    for (final budget
+        in budgets
+            .where(
+              (item) =>
+                  (item['remainingMinor'] as int) < 0 &&
+                  (mentioned == null || item['category'] == mentioned['name']),
+            )
+            .take(1))
+      'Review what pushed the ${budget['category']} budget over its limit, '
+          'then decide which purchases can wait until next month.',
+    if (mentioned == null)
+      'Set aside money for regular bills before choosing a flexible spending limit.'
+    else
+      'Compare ${mentioned['name']} purchases across months before setting the next limit.',
+  ];
+}
+
 String spendingAnswer(
   Analytics analytics,
   DateTime now,

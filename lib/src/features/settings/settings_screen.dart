@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/models.dart';
 import '../../data/state.dart';
 import '../../ui/shared.dart';
+import '../assistant/model_panel.dart';
 import 'backup.dart';
 import 'demo.dart';
 
@@ -190,6 +191,7 @@ class SettingsScreen extends ConsumerWidget {
                 ],
               ),
             ),
+            const ModelPanel(),
             Panel(
               title: 'About MoneyMate',
               child: Column(

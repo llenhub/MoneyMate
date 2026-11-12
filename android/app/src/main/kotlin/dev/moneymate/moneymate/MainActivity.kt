@@ -2,6 +2,7 @@ package dev.moneymate.moneymate
 
 import android.app.Activity
 import android.content.Intent
+import android.os.StatFs
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -15,6 +16,7 @@ class MainActivity : FlutterActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "dev.moneymate/platform")
             .setMethodCallHandler { call, result ->
                 when (call.method) {
+                    "freeBytes" -> result.success(StatFs(filesDir.path).availableBytes)
                     "saveBackup" -> {
                         val data = call.argument<ByteArray>("data")
                         if (data == null || backup != null) {

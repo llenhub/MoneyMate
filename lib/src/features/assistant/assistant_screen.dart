@@ -1,11 +1,15 @@
+import 'dart:convert';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/analytics.dart';
 import '../../core/models.dart';
 import '../../data/state.dart';
 import '../../ui/shared.dart';
 import 'answers.dart';
+import 'model_panel.dart';
 
 class AssistantScreen extends ConsumerStatefulWidget {
   const AssistantScreen({super.key});
@@ -17,6 +21,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
   final _input = TextEditingController();
   final _scroll = ScrollController();
   bool _sending = false;
+  String? _notice;
 
   @override
   void dispose() {
@@ -30,15 +35,40 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
     if (prompt.isEmpty || _sending) return;
     final state = ref.read(financeProvider).requireValue;
     final controller = ref.read(financeProvider.notifier);
+    final ai = ref.read(aiProvider);
+    final useModel =
+        ref.read(modelInstalledProvider).value == true &&
+        !ref.read(modelBusyProvider);
+    final activity = ref.read(modelBusyProvider.notifier);
     setState(() {
       _sending = true;
+      _notice = null;
     });
     _input.clear();
     final analytics = Analytics(state.ledger);
     final currency = state.preferences.currency;
     final now = DateTime.now();
+    final context = analytics.assistantContext(now, currency);
     try {
-      final answer = spendingAnswer(analytics, now, currency, prompt);
+      var answer = spendingAnswer(analytics, now, currency, prompt);
+      if (useModel && (context['expenseCount'] as int) > 0) {
+        try {
+          final suggestions = spendingSuggestions(context, currency, prompt);
+          final choice = await activity.run(
+            () => ai.chooseSuggestion(prompt, jsonEncode(context), suggestions),
+          );
+          if (choice != null && choice >= 0 && choice < suggestions.length) {
+            answer += '\n\nOn-device suggestion\n${suggestions[choice]}';
+          }
+        } catch (_) {
+          if (mounted) {
+            setState(
+              () => _notice =
+                  'The local model could not answer. Your calculated spending summary is available below.',
+            );
+          }
+        }
+      }
       await controller.change(
         (ledger) => ledger.copy(
           messages: [
@@ -52,7 +82,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
     } catch (error) {
       if (mounted) {
         _input.text = prompt;
-        showProblem(context, error);
+        showProblem(this.context, error);
       }
     } finally {
       if (mounted) {
@@ -73,6 +103,8 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(financeProvider).requireValue;
+    final installed = ref.watch(modelInstalledProvider).value == true;
+    final available = ref.watch(aiProvider).supported;
     final colors = Theme.of(context).colorScheme;
     return SafeArea(
       child: Center(
@@ -120,7 +152,21 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                const Text('Spending answers use your local ledger.'),
+                Text(
+                  installed
+                      ? 'On-device suggestions · ${state.preferences.currency} spending'
+                      : available
+                      ? 'No model installed. Spending analytics are ready to use.'
+                      : 'Local language model unavailable here. Ask for calculated spending analytics.',
+                ),
+                if (available && !installed)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton(
+                      onPressed: () => context.go('/settings'),
+                      child: const Text('Manage AI model'),
+                    ),
+                  ),
                 const SizedBox(height: 8),
                 Expanded(
                   child: ListView(
@@ -170,6 +216,8 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
                             child: SelectableText(message.text),
                           ),
                         ),
+                      if (_notice != null)
+                        Text(_notice!, style: TextStyle(color: colors.error)),
                     ],
                   ),
                 ),
