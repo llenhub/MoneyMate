@@ -18,6 +18,12 @@ const icons = <String, IconData>{
   'travel': Icons.flight_outlined,
   'shopping': Icons.shopping_bag_outlined,
   'gift': Icons.card_giftcard,
+  'car': Icons.directions_car_outlined,
+  'school': Icons.school_outlined,
+  'shield': Icons.shield_outlined,
+  'health': Icons.medical_services_outlined,
+  'party': Icons.celebration_outlined,
+  'flag': Icons.flag_outlined,
 };
 
 IconData namedIcon(String name) => icons[name] ?? Icons.circle_outlined;
@@ -26,7 +32,22 @@ String money(int value, String currency) {
   final parts = decimalMoney(value.abs(), currency).split('.');
   final whole = NumberFormat.decimalPattern('en').format(int.parse(parts[0]));
   final fraction = parts.length == 2 ? '.${parts[1]}' : '';
-  return '${value < 0 ? '−' : ''}$currency $whole$fraction';
+  final symbol =
+      const {
+        'USD': r'US$',
+        'TWD': r'NT$',
+        'EUR': '€',
+        'GBP': '£',
+        'JPY': '¥',
+        'CAD': r'CA$',
+        'AUD': r'A$',
+        'KRW': '₩',
+        'SGD': r'S$',
+        'HKD': r'HK$',
+        'INR': '₹',
+      }[currency] ??
+      '$currency ';
+  return '${value < 0 ? '−' : ''}$symbol$whole$fraction';
 }
 
 String dateLabel(DateTime date, String format) =>
@@ -287,7 +308,7 @@ class Choice<T> extends StatelessWidget {
   );
 }
 
-Widget formFields(List<Widget> fields) => Column(
+Column formFields(List<Widget> fields) => Column(
   crossAxisAlignment: CrossAxisAlignment.stretch,
   mainAxisSize: MainAxisSize.min,
   children: [

@@ -71,15 +71,16 @@ String spendingAnswer(
       text.contains('limit');
   if (budgetQuestion) {
     final budgets = analytics.ledger.budgets.where(
-      (budget) => budget.currency == currency && budget.month == month.monthKey,
+      (budget) =>
+          budget.currency == currency && budgetPeriod(budget).contains(now),
     );
     if (budgets.isEmpty) {
       return 'There are no $currency budgets for ${month.monthKey}. Set an overall or category limit in Monthly budgets.';
     }
-    return 'Budget progress for ${month.monthKey}\n\n${budgets.map((budget) {
-      final spent = analytics.spent(budget, current);
+    return 'Current budget progress\n\n${budgets.map((budget) {
+      final spent = sumEntries(analytics.budgetEntries(budget));
       final remaining = budget.amount - spent;
-      final name = analytics.categories[budget.categoryId]?.name ?? 'Overall';
+      final name = budget.name.isNotEmpty ? budget.name : analytics.categories[budget.categoryId]?.name ?? 'Overall';
       return '• $name · ${amount(spent)} of ${amount(budget.amount)} · '
           '${remaining < 0 ? '${amount(-remaining)} over' : '${amount(remaining)} left'}';
     }).join('\n')}';

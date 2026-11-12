@@ -23,6 +23,15 @@ class Period {
       '${start.year.toString().padLeft(4, '0')}-${start.month.toString().padLeft(2, '0')}';
 }
 
+int sumEntries(Iterable<Entry> entries) =>
+    entries.fold(0, (sum, entry) => sum + entry.amount);
+
+Period budgetPeriod(Budget budget) {
+  if (budget.start case final DateTime start) return Period(start, budget.end!);
+  final month = DateTime.parse('${budget.month}-01');
+  return Period.month(month);
+}
+
 class Totals {
   const Totals(this.income, this.expense, this.categories);
   final int income, expense;
@@ -99,6 +108,28 @@ class Analytics {
       ? totals.expense
       : totals.categories[budget.categoryId] ?? 0;
 
+  Iterable<Entry> expenses(Period period, String currency) =>
+      ledger.entries.where(
+        (entry) =>
+            entry.type == EntryType.expense &&
+            period.contains(entry.date) &&
+            wallets[entry.walletId]?.currency == currency,
+      );
+
+  List<Entry> budgetEntries(Budget budget) =>
+      expenses(budgetPeriod(budget), budget.currency)
+          .where(
+            (entry) =>
+                (budget.categoryId == null ||
+                    entry.categoryId == budget.categoryId) &&
+                (budget.walletId == null ||
+                    entry.walletId == budget.walletId) &&
+                (budget.labelId == null ||
+                    entry.labelIds.contains(budget.labelId)),
+          )
+          .toList()
+        ..sort((a, b) => b.date.compareTo(a.date));
+
   Json assistantContext(
     DateTime now,
     String currency, {
@@ -116,7 +147,7 @@ class Analytics {
             ),
           );
     final budgets = ledger.budgets.where(
-      (b) => b.month == period.monthKey && b.currency == currency,
+      (b) => b.currency == currency && budgetPeriod(b).contains(now),
     );
     final biggest = largest(period, currency);
     return {
@@ -149,13 +180,18 @@ class Analytics {
       ],
       'budgets': [
         for (final budget in budgets.take(10))
-          {
-            'category': categories[budget.categoryId]?.name ?? 'Overall',
-            'limitMinor': budget.amount,
-            'spentMinor': spent(budget, current),
-            'remainingMinor': budget.amount - spent(budget, current),
-            'utilizationPercent': spent(budget, current) * 100 ~/ budget.amount,
-          },
+          (() {
+            final spent = sumEntries(budgetEntries(budget));
+            return {
+              'category': budget.name.isNotEmpty
+                  ? budget.name
+                  : categories[budget.categoryId]?.name ?? 'Overall',
+              'limitMinor': budget.amount,
+              'spentMinor': spent,
+              'remainingMinor': budget.amount - spent,
+              'utilizationPercent': spent * 100 ~/ budget.amount,
+            };
+          })(),
       ],
       'largestExpenses': [
         for (final entry in biggest.take(5))

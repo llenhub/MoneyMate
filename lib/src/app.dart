@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'data/state.dart';
 import 'features/assistant/assistant_screen.dart';
-import 'features/budgets/budgets_screen.dart';
+import 'features/planning/planning_screen.dart';
 import 'features/dashboard/dashboard_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/transactions/transactions_screen.dart';
@@ -33,7 +33,7 @@ final _routerProvider = Provider<GoRouter>((ref) {
       ),
       _route('/assistant', (_) => const AssistantScreen()),
       _route('/settings', (_) => const SettingsScreen()),
-      _route('/budgets', (_) => const BudgetsScreen()),
+      _route('/budgets', (_) => const PlanningScreen()),
     ],
   );
   ref.onDispose(router.dispose);

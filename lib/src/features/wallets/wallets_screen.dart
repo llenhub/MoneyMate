@@ -7,6 +7,16 @@ import '../../core/models.dart';
 import '../../data/state.dart';
 import '../../ui/shared.dart';
 
+Future<void> openWalletEditor(
+  BuildContext context,
+  FinanceState state, {
+  Wallet? wallet,
+}) => editDialog<void>(
+  context,
+  wallet == null ? 'New wallet' : 'Edit wallet',
+  _WalletForm(state, wallet: wallet),
+);
+
 class WalletsScreen extends ConsumerWidget {
   const WalletsScreen({super.key});
 
@@ -15,11 +25,8 @@ class WalletsScreen extends ConsumerWidget {
     final state = ref.watch(financeProvider).requireValue;
     final ledger = state.ledger;
     final balances = Analytics(ledger).balances();
-    void edit([Wallet? wallet]) => editDialog<void>(
-      context,
-      wallet == null ? 'New wallet' : 'Edit wallet',
-      _WalletForm(state, wallet: wallet),
-    );
+    void edit([Wallet? wallet]) =>
+        openWalletEditor(context, state, wallet: wallet);
     return PageBody(
       title: 'Wallets',
       subtitle: 'Manage the places you keep and spend money.',
@@ -126,10 +133,13 @@ class WalletsScreen extends ConsumerWidget {
                               ),
                             ),
                             if (!ledger.entries.any(
-                              (e) =>
-                                  e.walletId == wallet.id ||
-                                  e.destinationId == wallet.id,
-                            ))
+                                  (e) =>
+                                      e.walletId == wallet.id ||
+                                      e.destinationId == wallet.id,
+                                ) &&
+                                !ledger.budgets.any(
+                                  (budget) => budget.walletId == wallet.id,
+                                ))
                               const PopupMenuItem(
                                 value: 'delete',
                                 child: Text('Delete'),
@@ -279,12 +289,17 @@ class _WalletFormState extends ConsumerState<_WalletForm> {
 
   @override
   Widget build(BuildContext context) {
-    final history = widget.state.ledger.entries.any(
-      (e) =>
-          widget.wallet != null &&
-          (e.walletId == widget.wallet!.id ||
-              e.destinationId == widget.wallet!.id),
-    );
+    final history =
+        (widget.wallet != null &&
+            widget.state.ledger.budgets.any(
+              (budget) => budget.walletId == widget.wallet!.id,
+            )) ||
+        widget.state.ledger.entries.any(
+          (e) =>
+              widget.wallet != null &&
+              (e.walletId == widget.wallet!.id ||
+                  e.destinationId == widget.wallet!.id),
+        );
     return formFields([
       TextField(
         controller: _name,
