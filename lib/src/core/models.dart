@@ -392,42 +392,42 @@ const palette = [
 
 List<Category> defaultCategories() {
   const expense = [
-    'Food & Drinks',
-    'Groceries',
-    'Transportation',
-    'Shopping',
-    'Entertainment',
-    'Housing',
-    'Utilities',
-    'Healthcare',
-    'Education',
-    'Subscriptions',
-    'Travel',
-    'Personal Care',
-    'Gifts',
-    'Miscellaneous',
+    ('Food & Drinks', 'food'),
+    ('Groceries', 'groceries'),
+    ('Transportation', 'transit'),
+    ('Shopping', 'shopping'),
+    ('Entertainment', 'movie'),
+    ('Housing', 'home'),
+    ('Utilities', 'utilities'),
+    ('Healthcare', 'health'),
+    ('Education', 'school'),
+    ('Subscriptions', 'subscriptions'),
+    ('Travel', 'travel'),
+    ('Personal Care', 'personal care'),
+    ('Gifts', 'gift'),
+    ('Miscellaneous', 'category'),
   ];
   const income = [
-    'Salary',
-    'Freelance',
-    'Business',
-    'Investments',
-    'Gifts',
-    'Refunds',
-    'Other Income',
+    ('Salary', 'salary'),
+    ('Freelance', 'freelance'),
+    ('Business', 'business'),
+    ('Investments', 'investments'),
+    ('Gifts', 'gift'),
+    ('Refunds', 'refund'),
+    ('Other Income', 'income'),
   ];
   return [
     for (final (type, names) in [
       (EntryType.expense, expense),
       (EntryType.income, income),
     ])
-      for (final (index, name) in names.indexed)
+      for (final (index, (name, icon)) in names.indexed)
         Category(
           '${type.name}-$index',
           name,
           type,
           palette[index % palette.length],
-          type == EntryType.income ? 'income' : 'category',
+          icon,
           isDefault: true,
         ),
   ];
@@ -517,11 +517,32 @@ class Ledger {
     if (![1, 2].contains(version)) {
       throw const FormatException('Unsupported backup version.');
     }
+    final categories = (json['categories'] as List).cast<Json>().map(
+      Category.fromJson,
+    );
+    final defaultIcons = {
+      for (final category in defaultCategories()) category.id: category.icon,
+    };
     final result = Ledger(
       wallets: (json['wallets'] as List).cast<Json>().map(Wallet.fromJson),
-      categories: (json['categories'] as List).cast<Json>().map(
-        Category.fromJson,
-      ),
+      categories: categories.map((category) {
+        final icon = defaultIcons[category.id];
+        if (icon == null ||
+            !category.isDefault ||
+            category.icon !=
+                (category.type == EntryType.income ? 'income' : 'category')) {
+          return category;
+        }
+        return Category(
+          category.id,
+          category.name,
+          category.type,
+          category.color,
+          icon,
+          archived: category.archived,
+          isDefault: category.isDefault,
+        );
+      }),
       entries: (json['transactions'] as List).cast<Json>().map(Entry.fromJson),
       budgets: (json['budgets'] as List).cast<Json>().map(Budget.fromJson),
       labels: ((json['labels'] ?? []) as List).cast<Json>().map(
