@@ -57,12 +57,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         horizontal: 44,
                         vertical: 10,
                       ),
-                      child: Text(
-                        'MoneyMate',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          MoneyMateLogo(size: 36),
+                          SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              'MoneyMate',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     Positioned(

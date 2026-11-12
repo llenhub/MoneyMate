@@ -209,11 +209,7 @@ class _Shell extends ConsumerWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        CircleAvatar(
-                          backgroundColor: ink,
-                          foregroundColor: mint,
-                          child: Icon(Icons.insights),
-                        ),
+                        MoneyMateLogo(size: 40),
                         SizedBox(width: 10),
                         Text(
                           'MoneyMate',

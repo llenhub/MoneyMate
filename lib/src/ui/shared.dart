@@ -3,8 +3,21 @@ import 'package:intl/intl.dart';
 
 import '../core/models.dart';
 
-const ink = Color(0xff123d33);
-const mint = Color(0xffd8f1e5);
+class MoneyMateLogo extends StatelessWidget {
+  const MoneyMateLogo({super.key, required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => Image.asset(
+    'assets/logo-transparent.png',
+    width: size,
+    height: size,
+    fit: BoxFit.contain,
+    excludeFromSemantics: true,
+  );
+}
+
 const icons = <String, IconData>{
   'wallet': Icons.account_balance_wallet_outlined,
   'cash': Icons.payments_outlined,
