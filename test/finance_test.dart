@@ -253,6 +253,37 @@ void main() {
     );
   });
 
+  test(
+    'backup restores atomically and rejects duplicate or dangling records',
+    () async {
+      final expense = entry('unique', EntryType.expense, 100, bank.id);
+      final encoded = ledger.copy(entries: [expense]).encode();
+      final restored = Ledger.decode(encoded);
+      await repository.save(restored, demo: false, previous: ledger);
+      expect(
+        (await FinanceRepository(store).load(demo: false)).entries.single.id,
+        'unique',
+      );
+      expect(
+        () =>
+            Ledger.decode(restored.copy(entries: [expense, expense]).encode()),
+        throwsFormatException,
+      );
+      await expectLater(
+        repository.save(
+          restored.copy(wallets: []),
+          demo: false,
+          previous: restored,
+        ),
+        throwsFormatException,
+      );
+      expect(
+        (await FinanceRepository(store).load(demo: false)).encode(),
+        encoded,
+      );
+    },
+  );
+
   test('demo snapshots stay separate from personal snapshots', () async {
     final empty = await repository.load(demo: true);
     final seeded = demoLedger(date);

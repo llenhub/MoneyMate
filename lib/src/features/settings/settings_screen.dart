@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/models.dart';
 import '../../data/state.dart';
 import '../../ui/shared.dart';
+import 'backup.dart';
 import 'demo.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -63,7 +64,7 @@ class SettingsScreen extends ConsumerWidget {
               ]),
             ),
             Panel(
-              title: 'Demo data',
+              title: 'Data and backup',
               child: Column(
                 children: [
                   SwitchListTile(
@@ -105,6 +106,56 @@ class SettingsScreen extends ConsumerWidget {
                         );
                       },
                     ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.download_outlined),
+                    title: Text(
+                      prefs.demo ? 'Export demo backup' : 'Export JSON backup',
+                    ),
+                    onTap: () => runAction(context, () async {
+                      final saved = await exportBackup(
+                        state.ledger,
+                        demo: prefs.demo,
+                      );
+                      if (saved && context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Backup exported.')),
+                        );
+                      }
+                    }),
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.upload_file_outlined),
+                    title: Text(
+                      prefs.demo
+                          ? 'Restore into demo ledger'
+                          : 'Restore JSON backup',
+                    ),
+                    onTap: () => runAction(context, () async {
+                      final ledger = await selectBackup(demo: prefs.demo);
+                      if (ledger == null || !context.mounted) return;
+                      if (!await confirm(
+                            context,
+                            'Replace ${prefs.demo ? 'demo' : 'personal'} ledger?',
+                            'The backup contains ${ledger.wallets.length} wallets and ${ledger.entries.length} transactions. '
+                                'Restoring replaces the active ledger.',
+                            'Restore',
+                          ) ||
+                          !context.mounted) {
+                        return;
+                      }
+                      await controller.change(
+                        (data) => ledger.copy(messages: data.messages),
+                        expectedDemo: prefs.demo,
+                      );
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Backup restored.')),
+                        );
+                      }
+                    }),
+                  ),
                 ],
               ),
             ),
