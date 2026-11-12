@@ -1,6 +1,14 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+val keyFile = rootProject.file("key.properties")
+val releaseKey = Properties()
+if (keyFile.isFile) {
+    keyFile.reader(Charsets.UTF_8).use { releaseKey.load(it) }
 }
 
 android {
@@ -21,9 +29,20 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (keyFile.isFile) {
+            create("distribution") {
+                storeFile = rootProject.file(releaseKey.getProperty("storeFile"))
+                storePassword = releaseKey.getProperty("storePassword")
+                keyAlias = releaseKey.getProperty("keyAlias")
+                keyPassword = releaseKey.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName(if (keyFile.isFile) "distribution" else "debug")
         }
     }
 }
