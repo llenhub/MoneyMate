@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'data/state.dart';
+import 'features/budgets/budgets_screen.dart';
 import 'features/dashboard/dashboard_screen.dart';
 import 'features/transactions/transactions_screen.dart';
 import 'features/wallets/wallets_screen.dart';
@@ -26,6 +27,7 @@ final _routerProvider = Provider<GoRouter>((ref) {
           walletId: state.uri.queryParameters['wallet'],
         ),
       ),
+      _route('/budgets', (_) => const BudgetsScreen()),
     ],
   );
   ref.onDispose(router.dispose);
@@ -133,7 +135,18 @@ class _Shell extends ConsumerWidget {
             path == '/transactions' ||
             (path == '/wallets' && hasWallet));
     return Scaffold(
-      appBar: desktop ? null : AppBar(title: const Text('MoneyMate')),
+      appBar: desktop
+          ? null
+          : AppBar(
+              title: const Text('MoneyMate'),
+              actions: [
+                IconButton(
+                  tooltip: 'Monthly budgets',
+                  icon: const Icon(Icons.pie_chart_outline),
+                  onPressed: () => context.go('/budgets'),
+                ),
+              ],
+            ),
       bottomNavigationBar: desktop
           ? null
           : NavigationBar(
@@ -196,6 +209,14 @@ class _Shell extends ConsumerWidget {
                         label: Text(item.$2),
                       ),
                   ],
+                  trailing: Padding(
+                    padding: const EdgeInsets.only(top: 14),
+                    child: TextButton.icon(
+                      onPressed: () => context.go('/budgets'),
+                      icon: const Icon(Icons.pie_chart_outline),
+                      label: const Text('Monthly budgets'),
+                    ),
+                  ),
                 ),
                 const VerticalDivider(width: 1),
                 Expanded(child: content),
