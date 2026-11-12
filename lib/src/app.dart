@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'data/state.dart';
 import 'features/budgets/budgets_screen.dart';
 import 'features/dashboard/dashboard_screen.dart';
+import 'features/settings/settings_screen.dart';
 import 'features/transactions/transactions_screen.dart';
 import 'features/wallets/wallets_screen.dart';
 import 'ui/shared.dart';
@@ -13,6 +14,7 @@ const _destinations = [
   ('/', 'Home', Icons.space_dashboard_outlined),
   ('/wallets', 'Wallets', Icons.account_balance_wallet_outlined),
   ('/transactions', 'Transactions', Icons.receipt_long_outlined),
+  ('/settings', 'Settings', Icons.settings_outlined),
 ];
 
 final _routerProvider = Provider<GoRouter>((ref) {
@@ -27,6 +29,7 @@ final _routerProvider = Provider<GoRouter>((ref) {
           walletId: state.uri.queryParameters['wallet'],
         ),
       ),
+      _route('/settings', (_) => const SettingsScreen()),
       _route('/budgets', (_) => const BudgetsScreen()),
     ],
   );
